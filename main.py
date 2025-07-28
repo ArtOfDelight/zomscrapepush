@@ -11,15 +11,26 @@ WORKSHEET_NAME = "Zomato Order Data"
 GOOGLE_SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
 ZOMATO_SESSION_JSON = os.getenv("ZOMATO_SESSION_JSON")
 
+import os
+import tempfile
+import json
+
 def init_sheet():
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_SERVICE_JSON, scope)
+
+    # Write the GOOGLE_SERVICE_JSON to a temporary file
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".json") as temp_file:
+        json.dump(json.loads(GOOGLE_SERVICE_JSON), temp_file)
+        temp_file_path = temp_file.name
+
+    creds = ServiceAccountCredentials.from_json_keyfile_name(temp_file_path, scope)
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
+
     try:
         worksheet = sheet.worksheet(WORKSHEET_NAME)
     except:
@@ -29,7 +40,9 @@ def init_sheet():
             "Delivery Duration", "Placed", "Accepted", "Ready", "Delivery partner arrived",
             "Picked up", "Delivered", "Items Ordered", "Customer Distance"
         ])
+
     return worksheet
+
 
 def get_existing_order_ids(worksheet):
     order_ids = worksheet.col_values(5)
