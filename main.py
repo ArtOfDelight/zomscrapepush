@@ -18,6 +18,7 @@ ZOMATO_SESSION_JSON = os.getenv("ZOMATO_SESSION_JSON")
 
 # === SHEET SETUP ===
 def init_sheet():
+    print("🔧 Initializing Google Sheet...")
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/spreadsheets",
@@ -29,13 +30,16 @@ def init_sheet():
     sheet = client.open(SHEET_NAME)
     try:
         worksheet = sheet.worksheet(WORKSHEET_NAME)
+        print(f"✅ Found existing worksheet: '{WORKSHEET_NAME}'")
     except:
+        print(f"📄 Worksheet '{WORKSHEET_NAME}' not found. Creating new one...")
         worksheet = sheet.add_worksheet(title=WORKSHEET_NAME, rows="1000", cols="20")
         worksheet.append_row([
             "Outlet ID", "Order History", "Customer Rating", "Comment", "Order ID", "Date & Time",
             "Delivery Duration", "Placed", "Accepted", "Ready", "Delivery partner arrived",
             "Picked up", "Delivered", "Items Ordered", "Customer Distance"
         ])
+        print("✅ Worksheet created and headers set.")
     return worksheet
 
 # === DATA EXTRACTION ===
@@ -87,35 +91,52 @@ def extract_review_data(text):
 
 # === MAIN SCRIPT ===
 def run():
+    print("🚀 Starting Zomato review extraction...")
     worksheet = init_sheet()
+
+    print("📥 Fetching existing Order IDs from sheet...")
     existing_order_ids = set(row[4] for row in worksheet.get_all_values()[1:] if row[4])
+    print(f"📄 {len(existing_order_ids)} existing Order IDs loaded.")
 
     with sync_playwright() as p:
+        print("🧭 Launching headless browser...")
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(storage_state=json.loads(ZOMATO_SESSION_JSON))
         page = context.new_page()
+
+        print(f"🌐 Navigating to: {URL}")
         page.goto(URL, wait_until="load")
         time.sleep(5)
 
         reviews = page.query_selector_all(".sc-cEvuZC.hNljIm")
-        print(f"Found {len(reviews)} reviews")
+        print(f"🔍 Found {len(reviews)} reviews on page.")
 
-        for review in reviews:
+        for idx, review in enumerate(reviews):
+            print(f"\n➡️ Processing review #{idx+1}...")
             review.click()
             time.sleep(3)
             page.wait_for_timeout(1000)
 
-            text = page.inner_text(".sc-bkzZxe.bQUpTy")
-            data = extract_review_data(text)
-            order_id = data[4]
+            try:
+                text = page.inner_text(".sc-bkzZxe.bQUpTy")
+                data = extract_review_data(text)
+                order_id = data[4]
 
-            if order_id not in existing_order_ids:
-                worksheet.append_row(data)
-                print(f"✅ Added Order ID: {order_id}")
-            else:
-                print(f"⏭️ Skipped duplicate Order ID: {order_id}")
+                if not order_id:
+                    print("⚠️ No Order ID found. Skipping this review.")
+                    continue
+
+                if order_id not in existing_order_ids:
+                    worksheet.append_row(data)
+                    print(f"✅ Added new Order ID: {order_id}")
+                else:
+                    print(f"⏭️ Skipped duplicate Order ID: {order_id}")
+
+            except Exception as e:
+                print(f"❌ Error while processing review #{idx+1}: {e}")
 
         browser.close()
+        print("🏁 Script completed and browser closed.")
 
 # === ENTRY POINT ===
 if __name__ == "__main__":
