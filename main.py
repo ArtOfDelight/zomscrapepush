@@ -5,15 +5,13 @@ import json
 from oauth2client.service_account import ServiceAccountCredentials
 import requests  # ✅ Added for triggering Apps Script
 import os
+import tempfile
 
 SHEET_NAME = "Swiggy Zomato Dashboard"
 WORKSHEET_NAME = "Zomato Order Data"
 GOOGLE_SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
 ZOMATO_SESSION_JSON = os.getenv("ZOMATO_SESSION_JSON")
 
-import os
-import tempfile
-import json
 
 def init_sheet():
     scope = [
@@ -21,8 +19,6 @@ def init_sheet():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-
-    # Write the GOOGLE_SERVICE_JSON to a temporary file
     with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".json") as temp_file:
         json.dump(json.loads(GOOGLE_SERVICE_JSON), temp_file)
         temp_file_path = temp_file.name
@@ -40,13 +36,13 @@ def init_sheet():
             "Delivery Duration", "Placed", "Accepted", "Ready", "Delivery partner arrived",
             "Picked up", "Delivered", "Items Ordered", "Customer Distance"
         ])
-
     return worksheet
 
 
 def get_existing_order_ids(worksheet):
     order_ids = worksheet.col_values(5)
     return set(order_ids[1:])
+
 
 def push_to_sheet(ws, outlet_id, data):
     formatted_items = []
@@ -73,6 +69,7 @@ def push_to_sheet(ws, outlet_id, data):
     ]
     print("\n\n📤 Pushing row to sheet:", row)
     ws.append_row(row)
+
 
 def extract_fields(text: str) -> dict:
     lines = text.strip().splitlines()
@@ -140,6 +137,7 @@ def extract_fields(text: str) -> dict:
 
     return output
 
+
 def run():
     IDs = ["20647827"]
     URL = "https://www.zomato.com/partners/onlineordering/reviews/"
@@ -148,7 +146,7 @@ def run():
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-gpu"])
-        context = browser.new_context(storage_state=json.loads(ZOMATO_SESSION_JSON))  # ✅ fixed
+        context = browser.new_context(storage_state=json.loads(ZOMATO_SESSION_JSON))
         page = context.new_page()
         page.goto(URL)
 
@@ -225,7 +223,6 @@ def run():
             except Exception as e:
                 print(f"❌ Script failed for ID {outlet_id}:", e)
 
-        # ✅ Trigger Apps Script Web App
         try:
             APPS_SCRIPT_WEB_URL = "https://script.google.com/macros/s/AKfycbzTjzoc5kxaPpDVpXWQ9VSg7I-XSM0VaoAMHcByZh37VIWxoZQQH8Lpctacg-3WuTyP/exec"
             r = requests.get(APPS_SCRIPT_WEB_URL)
@@ -236,8 +233,11 @@ def run():
         except Exception as e:
             print("❌ Failed to trigger Apps Script:", e)
 
-        input("Press ENTER to close browser...")
+        # ✅ FIXED: Only run this if local
+        if os.getenv("ENV") != "production":
+            input("Press ENTER to close browser...")
         browser.close()
+
 
 if __name__ == "__main__":
     run()
