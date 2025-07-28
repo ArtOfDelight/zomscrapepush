@@ -8,7 +8,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 SHEET_NAME = "Swiggy Zomato Dashboard"
 WORKSHEET_NAME = "Zomato Order Data"
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"  # 🔁 Replace with your real Apps Script URL
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHt37GPrtXQ64aYwNCz5huxX0wKHCysB4T1xf5M6Jfdl8DqEXQU3CvcAtVgJMqNwWtmQ/exec"  # Replace this with actual URL
 
 def init_sheet():
     scope = [
@@ -153,7 +153,10 @@ def run():
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-        context = browser.new_context(storage_state=json.loads(os.getenv("ZOMATO_SESSION_JSON")))
+        session_json = os.getenv("ZOMATO_SESSION_JSON")
+        if not session_json:
+            raise Exception("Missing ZOMATO_SESSION_JSON environment variable")
+        context = browser.new_context(storage_state=json.loads(session_json))
         page = context.new_page()
         page.goto(URL)
 
