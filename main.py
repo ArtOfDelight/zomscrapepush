@@ -123,7 +123,7 @@ def run():
 
     with sync_playwright() as p:
         print("🧭 Launching headless browser...")
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-gpu"])
         context = browser.new_context(storage_state=json.loads(ZOMATO_SESSION_JSON))
         page = context.new_page()
 
