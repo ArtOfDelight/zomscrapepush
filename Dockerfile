@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install playwright==1.47.0 && playwright install
 
 # Copy application code
-COPY src/ /app/src/
+COPY main.py .
 
 # Command to run the script
-CMD ["python", "src/main.py"]
+CMD ["python", "main.py"]
