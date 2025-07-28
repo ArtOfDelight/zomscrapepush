@@ -132,7 +132,7 @@ def run():
     existing_ids = get_existing_order_ids(worksheet)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-gpu"])
         context = browser.new_context(storage_state=LOGIN_STORAGE_FILE)
         page = context.new_page()
         page.goto(URL)
