@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# Install system dependencies for Playwright
-RUN apt-get update && apt-get install -y \
+# Install system dependencies for Playwright with debugging
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 \
     libatk-bridge2.0-0 \
     libxcomposite1 \
@@ -14,18 +14,19 @@ RUN apt-get update && apt-get install -y \
     libatk1.0-0 \
     libgtk-3-0 \
     libgstgl-1.0-0 \
-    libgstcodecparsers-1.0-0 \
+    libgstreamer-plugins-bad1.0-0 \
     libenchant-2-2 \
     libsecret-1-0 \
     libmanette-0.2-0 \
     libgles2 \
+    && echo "System dependencies installed successfully" \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install playwright==1.47.0 && playwright install
+RUN pip install --no-cache-dir -r requirements.txt && echo "Python dependencies installed"
+RUN pip install playwright==1.47.0 && playwright install && echo "Playwright installed"
 
 # Copy application code
 COPY main.py .
