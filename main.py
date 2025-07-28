@@ -6,8 +6,8 @@ import requests  # ✅ Added for triggering Apps Script
 
 SHEET_NAME = "Swiggy Zomato Dashboard"
 WORKSHEET_NAME = "Zomato Order Data"
-CREDENTIALS_FILE = "service_account.json"
-LOGIN_STORAGE_FILE = "zomato_login.json"  # ✅ Zomato session state
+GOOGLE_SERVICE_JSON = os.getenv("GOOGLE_SERVICE_JSON")
+ZOMATO_SESSION_JSON = os.getenv("ZOMATO_SESSION_JSON")
 
 def init_sheet():
     scope = [
