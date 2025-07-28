@@ -1,7 +1,15 @@
+# Use a slim Python base image
 FROM python:3.11-slim
 
-# Install system dependencies for Playwright with debugging
+# Set environment variables to avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies required by Playwright
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    gnupg \
+    ca-certificates \
     libnss3 \
     libatk-bridge2.0-0 \
     libxcomposite1 \
@@ -19,17 +27,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsecret-1-0 \
     libmanette-0.2-0 \
     libgles2 \
-    && echo "System dependencies installed successfully" \
+    && echo "✅ System dependencies installed successfully" \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Set working directory inside container
 WORKDIR /app
+
+# Copy and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && echo "Python dependencies installed"
-RUN pip install playwright==1.47.0 && playwright install && echo "Playwright installed"
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Playwright and its Chromium browser
+RUN pip install playwright==1.47.0 && playwright install chromium
 
 # Copy application code
-COPY main.py .
+COPY . .
 
-# Command to run the script
+# Start the Python application
 CMD ["python", "main.py"]
