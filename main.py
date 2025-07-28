@@ -1,8 +1,10 @@
 from playwright.sync_api import sync_playwright
 import gspread
 import re
+import json
 from oauth2client.service_account import ServiceAccountCredentials
 import requests  # ✅ Added for triggering Apps Script
+import os
 
 SHEET_NAME = "Swiggy Zomato Dashboard"
 WORKSHEET_NAME = "Zomato Order Data"
@@ -15,7 +17,7 @@ def init_sheet():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_SERVICE_JSON, scope)
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
     try:
@@ -126,14 +128,14 @@ def extract_fields(text: str) -> dict:
     return output
 
 def run():
-    IDs = ["20647827"] #"19501520", "20996205", "19418061", "19595967", "57750", "19501520", "20547934", "2113481", "20183353", "19595894", "18422924"]
+    IDs = ["20647827"]
     URL = "https://www.zomato.com/partners/onlineordering/reviews/"
     worksheet = init_sheet()
     existing_ids = get_existing_order_ids(worksheet)
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-gpu"])
-        context = browser.new_context(storage_state=LOGIN_STORAGE_FILE)
+        context = browser.new_context(storage_state=json.loads(ZOMATO_SESSION_JSON))  # ✅ fixed
         page = context.new_page()
         page.goto(URL)
 
@@ -210,9 +212,9 @@ def run():
             except Exception as e:
                 print(f"❌ Script failed for ID {outlet_id}:", e)
 
-        # ✅ Trigger Apps Script Web App at the end
+        # ✅ Trigger Apps Script Web App
         try:
-            APPS_SCRIPT_WEB_URL = "https://script.google.com/macros/s/AKfycbzTjzoc5kxaPpDVpXWQ9VSg7I-XSM0VaoAMHcByZh37VIWxoZQQH8Lpctacg-3WuTyP/exec"  # replace with yours
+            APPS_SCRIPT_WEB_URL = "https://script.google.com/macros/s/AKfycbzTjzoc5kxaPpDVpXWQ9VSg7I-XSM0VaoAMHcByZh37VIWxoZQQH8Lpctacg-3WuTyP/exec"
             r = requests.get(APPS_SCRIPT_WEB_URL)
             if r.status_code == 200:
                 print("✅ Apps Script triggered successfully.")
