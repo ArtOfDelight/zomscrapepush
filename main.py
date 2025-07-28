@@ -8,7 +8,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 SHEET_NAME = "Swiggy Zomato Dashboard"
 WORKSHEET_NAME = "Zomato Order Data"
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHt37GPrtXQ64aYwNCz5huxX0wKHCysB4T1xf5M6Jfdl8DqEXQU3CvcAtVgJMqNwWtmQ/exec"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"  # 🔁 Replace with your real Apps Script URL
 
 def init_sheet():
     scope = [
@@ -131,23 +131,19 @@ def extract_fields(text: str) -> dict:
     return output
 
 def trigger_apps_script():
-    """Trigger the Google Apps Script web app."""
     try:
         response = requests.get(APPS_SCRIPT_URL)
         response.raise_for_status()
         try:
             gas_response = response.json()
             if gas_response.get('success'):
-                print(f"✅ Apps Script triggered successfully. Message: {gas_response.get('message')}")
+                print(f"✅ Apps Script triggered: {gas_response.get('message')}")
             else:
-                print(f"❌ Apps Script reported an error. Error: {gas_response.get('error')}")
-                print(f"Raw Apps Script response: {response.text}")
+                print(f"❌ Apps Script error: {gas_response.get('error')}")
         except json.JSONDecodeError:
-            print(f"❌ Could not decode JSON from Apps Script response. Raw: {response.text}")
+            print(f"❌ Apps Script response is not valid JSON: {response.text}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error triggering Apps Script: {e}")
-        if 'response' in locals() and response.text:
-            print(f"Raw Apps Script response (on error): {response.text}")
 
 def run():
     IDs = ["20647827", "19501520", "20996205", "19418061", "19595967", "57750", "19501520", "20547934", "2113481", "20183353", "19595894", "18422924"]
@@ -168,20 +164,17 @@ def run():
                     search_xpath = "/html/body/div[1]/div/div[2]/div/div/div/div/div[3]/div[2]/div/div/div[1]/div[3]/div/div/div/div/div/div/div/input"
                     page.wait_for_selector(f"xpath={search_xpath}", timeout=10000)
                     page.locator(f"xpath={search_xpath}").fill(outlet_id)
-                    print(f"✅ ID {outlet_id} entered successfully.")
                     page.wait_for_timeout(3000)
                     page.wait_for_selector("text=Art Of Delight", timeout=10000)
                     page.locator("text=Art Of Delight").first.click()
-                    print("✅ Clicked on 'Art Of Delight'.")
                 else:
                     outlet_switch_xpath = "/html/body/div[1]/div/div[2]/div/div/div/div/div[2]/div/div[2]/div[2]/div/div[2]/div/div[1]/div[2]/div[3]/div/div/div[3]/img"
-                    page.locator(f"xpath={outlet_switch_xpath}").click(level=True)
+                    page.locator(f"xpath={outlet_switch_xpath}").click()
                     input_xpath = "/html/body/div[1]/div/div[2]/div/div/div/div/div[2]/div/div[2]/div[2]/div/div[2]/div/div[1]/div[2]/div[3]/div[2]/div[1]/div/div/div/div/div/div/div/input"
                     page.wait_for_selector(f"xpath={input_xpath}", timeout=10000)
                     page.locator(f"xpath={input_xpath}").fill(outlet_id)
                     page.wait_for_timeout(3000)
                     page.locator(f"text=ID: {outlet_id}").first.click()
-                    print(f"✅ Switched to ID {outlet_id}")
 
                 page.wait_for_timeout(3000)
                 review_buttons = page.locator("text=View Review Details")
@@ -195,7 +188,6 @@ def run():
 
                     try:
                         page.locator("text=Order Details").first.click()
-                        print("📄 Clicked 'Order Details'.")
                         page.wait_for_timeout(1500)
                     except:
                         print("⚠️ 'Order Details' not found.")
@@ -204,16 +196,7 @@ def run():
                         modal_section = page.locator("div:has-text('ORDER TIMELINE')").first
                         full_modal_text = modal_section.inner_text()
                         extracted = extract_fields(full_modal_text)
-
                         order_id = extracted['order_id'].strip()
-                        print("\n📋 Extracted Preview:")
-                        for k, v in extracted.items():
-                            if isinstance(v, dict):
-                                print(f"{k}:\n" + "\n".join([f"  {ik}: {iv}" for ik, iv in v.items()]))
-                            elif isinstance(v, list):
-                                print(f"{k}:\n  " + "\n  ".join(v))
-                            else:
-                                print(f"{k}: {v}")
 
                         if order_id in existing_ids:
                             print(f"⏭️ Skipping duplicate Order ID: {order_id}")
