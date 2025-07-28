@@ -1,0 +1,16 @@
+services:
+  - type: worker
+    name: zomato-scraper
+    env: python
+    region: singapore
+    buildCommand: pip install -r requirements.txt && playwright install
+    startCommand: python zomato_scraper_with_apps_script.py
+    envVars:
+      - key: GOOGLE_SERVICE_JSON
+        sync: false
+      - key: ZOMATO_SESSION_JSON
+        sync: false
+      - key: APPS_SCRIPT_ID
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.10.7
