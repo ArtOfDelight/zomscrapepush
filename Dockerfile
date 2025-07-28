@@ -21,14 +21,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libatk1.0-0 \
     libgtk-3-0 \
-    libgstgl-1.0-0 \
     libgstreamer-plugins-bad1.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-libav \
     libenchant-2-2 \
     libsecret-1-0 \
     libmanette-0.2-0 \
     libgles2 \
     && echo "✅ System dependencies installed successfully" \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Set working directory inside container
 WORKDIR /app
